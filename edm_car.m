@@ -1,6 +1,8 @@
-function xd = edm_car(t, y)
+function [xd, par_out] = edm_car(t, y)
 % ODE describing a 10-DOF car model.
 % x is a 28-element array containing first speeds and then positions.
+
+par_out = [];
 
 xc_1 = y(1);
 yc_1 = y(2);
@@ -36,7 +38,7 @@ q_1 = y(1:10);
 
 
 % Forces at road - tyre interface
-if t < 2 || t > 3
+if t < 2 || t > 2.1
     Fx_fl = 0; Fy_fl = 0;
     Fx_fr = 0; Fy_fr = 0;
     Fx_rl = 0; Fy_rl = 0;
@@ -51,18 +53,18 @@ if t < 2 || t > 3
     zpn_rr_0 = 0;
     zpn_rr_1 = 0;
 else
-    Fx_fl = 0; Fy_fl = 0;
+    Fx_fl = 0; Fy_fl = 1000;
     Fx_fr = 0; Fy_fr = 0;
-    Fx_rl = 0; Fy_rl = 0; %1000*sin(2*pi*t);
+    Fx_rl = 0; Fy_rl = 1000; %1000*sin(2*pi*t);
     Fx_rr = 0; Fy_rr = 0; %-1000*sin(2*pi*t);
     % Terrain speed
-    zpn_fl_0 = .1*sin(2*pi*t + 0);
+    zpn_fl_0 = 0;
     zpn_fl_1 = 0;
-    zpn_fr_0 = .1*sin(2*pi*t + pi/2);
+    zpn_fr_0 = 0;
     zpn_fr_1 = 0;
-    zpn_rl_0 = .1*sin(2*pi*t + pi);
+    zpn_rl_0 = 0;
     zpn_rl_1 = 0;
-    zpn_rr_0 = .1*sin(2*pi*t + 1.5*pi);
+    zpn_rr_0 = 0;
     zpn_rr_1 = 0;
 end
 
@@ -72,7 +74,7 @@ mc = 1000; % kg.
 Ixc = 0; %kg * m
 Iyc = 0; %kg * m
 Izc = 0; %kg * m
-xb = 0.0; %m, distance of COG from car-centered RS in car RS.
+xb = 1.0; %m, distance of COG from car-centered RS in car RS.
 yb = 0.0; %m
 zb = 1.0; %m
 
@@ -259,10 +261,10 @@ dD_dq_T = dDs_dq_T + dDp_dq_T;
 
 % Longitudinal and lateral forces acting onto tyre-road interface
 % Q = reproject_tyre_forces(Fx, Fy, p, s, d, h, l, r, rho, beta, sigma)
-Qp_fl = reproject_tyre_forces(Fx_fl, Fy_fl, p_fl, s_fl, d_fl, h_fl, l_fl_0, r_fl_0, rho_0, beta_0, sigma_0)';
-Qp_fr = reproject_tyre_forces(Fx_fr, Fy_fr, p_fr, s_fr, d_fr, h_fr, l_fr_0, r_fr_0, rho_0, beta_0, sigma_0)';
-Qp_rl = reproject_tyre_forces(Fx_rl, Fy_rl, p_rl, s_rl, d_rl, h_rl, l_rl_0, r_rl_0, rho_0, beta_0, sigma_0)';
-Qp_rr = reproject_tyre_forces(Fx_rr, Fy_rr, p_rr, s_rr, d_rr, h_rr, l_rr_0, r_rr_0, rho_0, beta_0, sigma_0)';
+Qp_fl = reproject_tyre_forces(Fx_fl, Fy_fl, p_fl, s_fl, d_fl, h_fl, l_fl_0, r_fl_0, rho_0, beta_0, sigma_0, zc_0, zpn_fl_0)';
+Qp_fr = reproject_tyre_forces(Fx_fr, Fy_fr, p_fr, s_fr, d_fr, h_fr, l_fr_0, r_fr_0, rho_0, beta_0, sigma_0, zc_0, zpn_fr_0)';
+Qp_rl = reproject_tyre_forces(Fx_rl, Fy_rl, p_rl, s_rl, d_rl, h_rl, l_rl_0, r_rl_0, rho_0, beta_0, sigma_0, zc_0, zpn_rl_0)';
+Qp_rr = reproject_tyre_forces(Fx_rr, Fy_rr, p_rr, s_rr, d_rr, h_rr, l_rr_0, r_rr_0, rho_0, beta_0, sigma_0, zc_0, zpn_rr_0)';
 
 Qp = [Qp_fl(1:6, 1) + Qp_fr(1:6, 1) + Qp_rl(1:6, 1) + Qp_rr(1:6, 1);
     Qp_fl(7, 1); Qp_fr(7, 1); Qp_rl(7, 1); Qp_rr(7, 1)];
@@ -291,7 +293,7 @@ q_2 = M \ DU;
 % q_2 = diag(diag(M)) \ DU;
 
 if t > 200   || (l_fl_0 < 0)
-     keyboard
+%      keyboard
 end
 
 xd = [q_2; zeros(4, 1); y(1:14)];
