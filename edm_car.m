@@ -2,7 +2,7 @@ function [xd, par_out] = edm_car(t, y)
 % ODE describing a 10-DOF car model.
 % x is a 28-element array containing first speeds and then positions.
 
-par_out = [];
+par_out = struct();
 
 xc_1 = y(1);
 yc_1 = y(2);
@@ -38,25 +38,67 @@ q_1 = y(1:10);
 
 
 % Forces at road - tyre interface
-if t < 2 || t > 2.1
+if t >= 2 && t < 2.5
     Fx_fl = 0; Fy_fl = 0;
     Fx_fr = 0; Fy_fr = 0;
-    Fx_rl = 0; Fy_rl = 0;
-    Fx_rr = 0; Fy_rr = 0;
+    Fx_rl = 0; Fy_rl = 0; %1000*sin(2*pi*t);
+    Fx_rr = 0; Fy_rr = 0; %-1000*sin(2*pi*t);
     % Terrain speed
-    zpn_fl_0 = 0;
+    zpn_fl_0 = .2;
     zpn_fl_1 = 0;
-    zpn_fr_0 = 0;
+    zpn_fr_0 = .2;
     zpn_fr_1 = 0;
     zpn_rl_0 = 0;
     zpn_rl_1 = 0;
     zpn_rr_0 = 0;
     zpn_rr_1 = 0;
-else
-    Fx_fl = 0; Fy_fl = 1000;
+elseif t >= 4 && t < 4.5
+    Fx_fl = 0; Fy_fl = 0;
     Fx_fr = 0; Fy_fr = 0;
-    Fx_rl = 0; Fy_rl = 1000; %1000*sin(2*pi*t);
+    Fx_rl = 0; Fy_rl = 0; %1000*sin(2*pi*t);
     Fx_rr = 0; Fy_rr = 0; %-1000*sin(2*pi*t);
+    % Terrain speed
+    zpn_fl_0 = 0;
+    zpn_fl_1 = 0;
+    zpn_fr_0 = 0;
+    zpn_fr_1 = 0;
+    zpn_rl_0 = .2;
+    zpn_rl_1 = 0;
+    zpn_rr_0 = .2;
+    zpn_rr_1 = 0;
+elseif t >= 6 && t < 6.5
+    Fx_fl = 0; Fy_fl = 0;
+    Fx_fr = 0; Fy_fr = 0;
+    Fx_rl = 0; Fy_rl = 0; %1000*sin(2*pi*t);
+    Fx_rr = 0; Fy_rr = 0; %-1000*sin(2*pi*t);
+    % Terrain speed
+    zpn_fl_0 = .2;
+    zpn_fl_1 = 0;
+    zpn_fr_0 = 0;
+    zpn_fr_1 = 0;
+    zpn_rl_0 = .2;
+    zpn_rl_1 = 0;
+    zpn_rr_0 = 0;
+    zpn_rr_1 = 0;
+elseif t >= 8 && t < 8.5
+    Fx_fl = 0; Fy_fl = 0;
+    Fx_fr = 0; Fy_fr = 0;
+    Fx_rl = 0; Fy_rl = 0; %1000*sin(2*pi*t);
+    Fx_rr = 0; Fy_rr = 0; %-1000*sin(2*pi*t);
+    % Terrain speed
+    zpn_fl_0 = 0;
+    zpn_fl_1 = 0;
+    zpn_fr_0 = .2;
+    zpn_fr_1 = 0;
+    zpn_rl_0 = 0;
+    zpn_rl_1 = 0;
+    zpn_rr_0 = .2;
+    zpn_rr_1 = 0;
+else
+    Fx_fl = 0; Fy_fl = 0;
+    Fx_fr = 0; Fy_fr = 0;
+    Fx_rl = 0; Fy_rl = 0;
+    Fx_rr = 0; Fy_rr = 0;
     % Terrain speed
     zpn_fl_0 = 0;
     zpn_fl_1 = 0;
@@ -71,10 +113,10 @@ end
 % Physical parameters of the model. 
 % car body center of gravity position.
 mc = 1000; % kg.
-Ixc = 0; %kg * m
-Iyc = 0; %kg * m
-Izc = 0; %kg * m
-xb = 1.0; %m, distance of COG from car-centered RS in car RS.
+Ixc = 300; %kg * m
+Iyc = 2000; %kg * m
+Izc = 2000; %kg * m
+xb = 0.3; %m, distance of COG from car-centered RS in car RS.
 yb = 0.0; %m
 zb = 1.0; %m
 
@@ -289,7 +331,26 @@ Q = Qp + Q_aer_d + Q_aer_l;
 
 %% Assembling final equation
 DU = -M1*q_1 + dEcc_dq - dV_dq_T - dD_dq_T + Q;
+% DU = dEcc_dq + dV_dq_T - dD_dq_T + Q;
 q_2 = M \ DU;
+
+par_out.q_2 = q_2;
+par_out.q_1 = q_1;
+par_out.q_0 = q_0;
+par_out.M = M;
+par_out.dEcc_dq = dEcc_dq;
+par_out.dV_dq_T = dV_dq_T;
+par_out.dD_dq_T = dD_dq_T;
+par_out.Q = Q;
+Fz_r_fl = -kp_fl*(r_fl_0 - r_fl_ind) - rp_fl*(r_fl_1);
+Fz_r_fr = -kp_fr*(r_fr_0 - r_fr_ind) - rp_fr*(r_fr_1);
+Fz_r_rl = -kp_rl*(r_rl_0 - r_rl_ind) - rp_rl*(r_rl_1);
+Fz_r_rr = -kp_rr*(r_rr_0 - r_rr_ind) - rp_rr*(r_rr_1);
+par_out.F_wheels = [Fz_r_fl, Fz_r_fr, Fz_r_rl, Fz_r_rr];
+par_out.r_wheels = [r_fl_0, r_fr_0, r_rl_0, r_rr_0];
+par_out.rv_wheels = [r_fl_1, r_fr_1, r_rl_1, r_rr_1];
+
+
 % q_2 = diag(diag(M)) \ DU;
 
 if t > 200   || (l_fl_0 < 0)
@@ -307,7 +368,7 @@ xd = [q_2; zeros(4, 1); y(1:14)];
 
 
 
-
+% disp(t)
 
 
 
