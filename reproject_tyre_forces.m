@@ -3,10 +3,14 @@ function Q = reproject_tyre_forces(Fx, Fy, p, s, d, h, l, r, rho, beta, sigma, z
 % This ignores derivatives of r with respect to other q.ties, however the
 % original derivative of force w.r. to r is quite low, hence I'm neglecting
 % this unless problems arise.
+% TODO: consider the full set of angles, as wheel forces are being
+% calculated with respect to the car reference system.
 
 % Repòrojecting forces along absolute RS
 Fv_s = [Fx; Fy; 0]; % expressed in rotating RS.
-Ls0 = [cos(sigma) -sin(sigma) 0; sin(sigma) cos(sigma) 0; 0 0 1];
+% EDIT 29/05: Using full Jacobian instead of reduced one.
+Ls0 = generate_jacobian(rho, beta, sigma);
+% Ls0 = [cos(sigma) -sin(sigma) 0; sin(sigma) cos(sigma) 0; 0 0 1];
 Fv_0 = Ls0*Fv_s;
 
 % Calculating partial derivatives of r with respect to the main free

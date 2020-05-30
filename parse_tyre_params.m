@@ -2,7 +2,7 @@ function outp = parse_tyre_params(txt_in)
 
 f1 = fopen(txt_in, 'r');
 s = fscanf(f1, '%c');
-
+fclose(f1);
 ll = strsplit(s, newline);
 
 outp = struct();

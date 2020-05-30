@@ -7,6 +7,7 @@ function [Fx, Fy, Mz] = pacejka96(param, Fz, g, k, a)
 % k: longitudinal slip ratio in percentage
 % a: sideslip angle in degrees
 
+
 % Longitudinal Force
 C = param.b0;
 D = Fz * (param.b1*Fz + param.b2);

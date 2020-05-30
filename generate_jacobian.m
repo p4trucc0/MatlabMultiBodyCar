@@ -1,7 +1,7 @@
 function L = generate_jacobian(r, b, s)
 
 l11 = cos(s)*cos(b) - sin(b)*sin(s)*sin(r);
-l12 = -sin(r)*cos(r);
+l12 = -sin(s)*cos(r);
 l13 = cos(s)*sin(b) + sin(s)*sin(r)*cos(b);
 l21 = sin(s)*cos(b) + cos(s)*sin(r)*sin(b);
 l22 = cos(s)*cos(r);
