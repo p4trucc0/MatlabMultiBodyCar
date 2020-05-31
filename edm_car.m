@@ -56,9 +56,9 @@ zpn_rr_0 = 0;
 zpn_rr_1 = 0;
 
 % Steer angle
-if (t >= 1) && (t <= 6)
-    phi_fl = -deg2rad(20)*sin(2*pi*(1/5)*(t - 1));
-    phi_fr = -deg2rad(20)*sin(2*pi*(1/5)*(t - 1));
+if (t >= 2) && (t <= 4)
+    phi_fl = -deg2rad(20)*sin(2*pi*(1/2)*(t - 2));
+    phi_fr = -deg2rad(20)*sin(2*pi*(1/2)*(t - 2));
     phi_rl = 0;
     phi_rr = 0;
 else
@@ -71,7 +71,7 @@ end
 
 % Physical parameters of the model. 
 % car body center of gravity position.
-mc = 1000; % kg.
+mc = 1500; % kg.
 Ixc = 300; %kg * m
 Iyc = 2000; %kg * m
 Izc = 2000; %kg * m
@@ -84,8 +84,8 @@ p_f = 1.4; %m, distance of front axle from car RS
 s_f = 0.6; %m, lateral distance front wheels
 d_f = 0.1; %m, distance of wheel central plane from suspension mount point.
 h_f = 0.8; %m, height of suspension mount point.
-l_f_ind = 0.8; %m, undeformed suspension length
-ks_f = 30000; % N/m, suspension spring
+l_f_ind = 0.9; %m, undeformed suspension length
+ks_f = 60000; % N/m, suspension spring
 kp_f = 120000; % N/m, tyre as spring
 rs_f = 10000; % N*s/m, damper
 rp_f = 10000; % N*s/m, tyre as damper
@@ -95,8 +95,8 @@ p_r = 1.4;
 s_r = 0.6;
 d_r = 0.1;
 h_r = 0.8;
-ks_r = 30000; % N/m, suspension spring
-l_r_ind = 0.8; %m, undeformed suspension length
+ks_r = 60000; % N/m, suspension spring
+l_r_ind = 0.9; %m, undeformed suspension length
 kp_r = 120000; % N/m, tyre as spring
 rs_r = 10000; % N*s/m, damper
 rp_r = 10000; % N*s/m, tyre as damper
@@ -123,8 +123,30 @@ ks_rr = ks_r; rs_rr = rs_r; kp_rr = kp_r; rp_rr = rp_r; r_rr_ind = r_r_ind;
 
 % Tyre parameters. Defining them like this is extremely inefficient: this
 % should be fixed as soon as refactoring starts.
-BaseTyreFile = 'tyre1.txt';
-tyre_param = parse_tyre_params(BaseTyreFile);
+%BaseTyreFile = 'tyre1.txt';
+%tyre_param = parse_tyre_params(BaseTyreFile);
+tyre_param.a0 = 1.2800; tyre_param.a1 = -28; tyre_param.a2 = 1275;
+tyre_param.a3 = 1900; tyre_param.a4 = 8; tyre_param.a5 = 0.0150;
+tyre_param.a6 = -0.2500; tyre_param.a7 = 0.1000; tyre_param.a8 = -0.0300;
+tyre_param.a9 = -1.0000e-03; tyre_param.a10 = -0.1500; tyre_param.a111 = 0;
+tyre_param.a112 = -0.2900; tyre_param.a12 = 17.8000; tyre_param.a13 = -2.4000;
+tyre_param.b0 = 1.4660; tyre_param.b1 = -40; tyre_param.b2 = 1275;
+tyre_param.b3 = 40; tyre_param.b4 = 240; tyre_param.b5 = 0.0800;
+tyre_param.b6 = -0.0500; tyre_param.b7 = 0.0500; tyre_param.b8 = -0.0250;
+tyre_param.b9 = 0.0150; tyre_param.b10 = 0.4000; tyre_param.c0 = 2.3150;
+tyre_param.c1 = -4; tyre_param.c2 = -3; tyre_param.c3 = -1.6000; 
+tyre_param.c4 = -6; tyre_param.c5 = 0; tyre_param.c6 = 0;
+tyre_param.c7 = 0.0200; tyre_param.c8 = -0.5800; tyre_param.c9 = 0.1800;
+tyre_param.c10 = 0.0430; tyre_param.c11 = 0.0480; tyre_param.c12 = -0.0035;
+tyre_param.c13 = -0.1800; tyre_param.c14 = 0.1400; tyre_param.c15 = -1.0290;
+tyre_param.c16 = 0.2700; tyre_param.c17 = -1.1000; tyre_param.a11 = 0;
+tyre_param.a14 = 0; tyre_param.a15 = 0; tyre_param.a16 = 0;
+tyre_param.a17 = 0; tyre_param.a18 = 0; tyre_param.a19 = 0;
+tyre_param.a20 = 0; tyre_param.b11 = 0; tyre_param.b12 = 0;
+tyre_param.b13 = 0; tyre_param.b14 = 0; tyre_param.b15 = 0;
+tyre_param.b16 = 0; tyre_param.b17 = 0; tyre_param.b18 = 0;
+tyre_param.b19 = 0; tyre_param.b20 = 0; tyre_param.c18 = 0;
+tyre_param.c19 = 0; tyre_param.c20 = 0;
 tyre_param.b9 = 0;
 tyre_param.b10 = 0;
 
@@ -403,7 +425,10 @@ q_2 = M \ DU;
 %     keyboard
 % end
 
+A_car = L_c_0 \ q_2(1:3); % relative car accelerations (car reference).
+
 par_out.phiv = [phi_fl, phi_fr, phi_rl, phi_rr];
+par_out.A_car = A_car;
 par_out.q_2 = q_2;
 par_out.q_1 = q_1;
 par_out.q_0 = q_0;
