@@ -225,7 +225,7 @@ sim_out.Az = sim_out.xv(:, 69);
 sim_out.Speed_ms = (sim_out.xc_1.^2 + sim_out.yc_1.^2 + sim_out.zc_1.^2).^.5;
 sim_out.Speed_kmh = 3.6*sim_out.Speed_ms;
 
-save('SweepSteer_20ms_2s_20deg_hCOG_100cm.mat', 'sim_out');
+save('WhyGoesHeRight_03_zb02_xbM03_ybP00_symmetrizedPac.mat', 'sim_out');
 
 
 

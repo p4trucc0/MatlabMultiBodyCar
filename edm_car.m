@@ -56,12 +56,12 @@ zpn_rr_0 = 0;
 zpn_rr_1 = 0;
 
 % Steer angle
-if (t >= 2) && (t <= 4)
-    phi_fl = -deg2rad(20)*sin(2*pi*(1/2)*(t - 2));
-    phi_fr = -deg2rad(20)*sin(2*pi*(1/2)*(t - 2));
-    phi_rl = 0;
-    phi_rr = 0;
-else
+% if (t >= 2) && (t <= 4)
+%     phi_fl = -deg2rad(0)*sin(2*pi*(1/2)*(t - 2));
+%     phi_fr = -deg2rad(0)*sin(2*pi*(1/2)*(t - 2));
+%     phi_rl = 0;
+%     phi_rr = 0;
+if 1 %else
     phi_fl = 0;
     phi_fr = 0;
     phi_rl = 0;
@@ -75,9 +75,9 @@ mc = 1500; % kg.
 Ixc = 300; %kg * m
 Iyc = 2000; %kg * m
 Izc = 2000; %kg * m
-xb = 0.3; %m, distance of COG from car-centered RS in car RS.
+xb = -0.3; %m, distance of COG from car-centered RS in car RS.
 yb = 0.0; %m
-zb = 1.0; %m
+zb = 0.2; %m
 
 % Suspension geometry
 p_f = 1.4; %m, distance of front axle from car RS
@@ -125,15 +125,15 @@ ks_rr = ks_r; rs_rr = rs_r; kp_rr = kp_r; rp_rr = rp_r; r_rr_ind = r_r_ind;
 % should be fixed as soon as refactoring starts.
 %BaseTyreFile = 'tyre1.txt';
 %tyre_param = parse_tyre_params(BaseTyreFile);
-tyre_param.a0 = 1.2800; tyre_param.a1 = -28; tyre_param.a2 = 1275;
-tyre_param.a3 = 1900; tyre_param.a4 = 8; tyre_param.a5 = 0.0150;
-tyre_param.a6 = -0.2500; tyre_param.a7 = 0.1000; tyre_param.a8 = -0.0300;
+tyre_param.a0 = 1.4660; tyre_param.a1 = -7.4; tyre_param.a2 = 999;
+tyre_param.a3 = 2238; tyre_param.a4 = 8; tyre_param.a5 = 0.0150;
+tyre_param.a6 = -0.2350; tyre_param.a7 = -0.3000; tyre_param.a8 = -0.0300;
 tyre_param.a9 = -1.0000e-03; tyre_param.a10 = -0.1500; tyre_param.a111 = 0;
 tyre_param.a112 = -0.2900; tyre_param.a12 = 17.8000; tyre_param.a13 = -2.4000;
-tyre_param.b0 = 1.4660; tyre_param.b1 = -40; tyre_param.b2 = 1275;
-tyre_param.b3 = 40; tyre_param.b4 = 240; tyre_param.b5 = 0.0800;
+tyre_param.b0 = 1.3600; tyre_param.b1 = -40; tyre_param.b2 = 1038;
+tyre_param.b3 = 0.306; tyre_param.b4 = 100; tyre_param.b5 = 0.0800;
 tyre_param.b6 = -0.0500; tyre_param.b7 = 0.0500; tyre_param.b8 = -0.0250;
-tyre_param.b9 = 0.0150; tyre_param.b10 = 0.4000; tyre_param.c0 = 2.3150;
+tyre_param.b9 = 0.0; tyre_param.b10 = 0.0; tyre_param.c0 = 2.3150;
 tyre_param.c1 = -4; tyre_param.c2 = -3; tyre_param.c3 = -1.6000; 
 tyre_param.c4 = -6; tyre_param.c5 = 0; tyre_param.c6 = 0;
 tyre_param.c7 = 0.0200; tyre_param.c8 = -0.5800; tyre_param.c9 = 0.1800;
@@ -355,16 +355,16 @@ Fz_r_rr = -kp_rr*(r_rr_0 - r_rr_ind) - rp_rr*(r_rr_1);
 if t > 1.0
     [Fx_t_fl, Fy_t_fl, Mz_t_fl, slip_rate_fl, slip_angle_fl_deg] = apply_pacejka(Fz_r_fl, phi_fl, p_fl, ...
         s_fl, d_fl, h_fl, l_fl_0, l_fl_1, rr_fl, xc_1, yc_1, zc_1, rho_0, ...
-        beta_0, sigma_0, rho_1, beta_1, sigma_1, theta_fl_1, tyre_param_fl);
+        beta_0, sigma_0, rho_1, beta_1, sigma_1, theta_fl_1, tyre_param_fl, 0);
     [Fx_t_fr, Fy_t_fr, Mz_t_fr, slip_rate_fr, slip_angle_fr_deg] = apply_pacejka(Fz_r_fr, phi_fr, p_fr, ...
         s_fr, d_fr, h_fr, l_fr_0, l_fr_1, rr_fr, xc_1, yc_1, zc_1, rho_0, ...
-        beta_0, sigma_0, rho_1, beta_1, sigma_1, theta_fr_1, tyre_param_fr);
+        beta_0, sigma_0, rho_1, beta_1, sigma_1, theta_fr_1, tyre_param_fr, 1);
     [Fx_t_rl, Fy_t_rl, Mz_t_rl, slip_rate_rl, slip_angle_rl_deg] = apply_pacejka(Fz_r_rl, phi_rl, p_rl, ...
         s_rl, d_rl, h_rl, l_rl_0, l_rl_1, rr_rl, xc_1, yc_1, zc_1, rho_0, ...
-        beta_0, sigma_0, rho_1, beta_1, sigma_1, theta_rl_1, tyre_param_rl);
+        beta_0, sigma_0, rho_1, beta_1, sigma_1, theta_rl_1, tyre_param_rl, 0);
     [Fx_t_rr, Fy_t_rr, Mz_t_rr, slip_rate_rr, slip_angle_rr_deg] = apply_pacejka(Fz_r_rr, phi_rr, p_rr, ...
         s_rr, d_rr, h_rr, l_rr_0, l_rr_1, rr_rr, xc_1, yc_1, zc_1, rho_0, ...
-        beta_0, sigma_0, rho_1, beta_1, sigma_1, theta_rr_1, tyre_param_rr);
+        beta_0, sigma_0, rho_1, beta_1, sigma_1, theta_rr_1, tyre_param_rr, 1);
     % Todo: add some damping to avoid Fx going crazy
     theta_fl_2 = -(Fx_t_fl * rr_fl - 2.5e-4*theta_fl_1) / Jr_fl;
     theta_fr_2 = -(Fx_t_fr * rr_fr - 2.5e-4*theta_fr_1) / Jr_fr;
@@ -421,7 +421,7 @@ Q = Qp + Q_aer_d + Q_aer_l;
 DU = dEcc_dq - dV_dq_T - dD_dq_T + Q;
 q_2 = M \ DU;
 % 
-% if t > 0.5
+% if t > 5
 %     keyboard
 % end
 

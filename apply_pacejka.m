@@ -1,4 +1,7 @@
-function [Fx, Fy, Mz, SR, SA] = apply_pacejka(Fz, phi, p, s, d, h, l0, l1, rr, xc_1, yc_1, zc_1, rho_0, beta_0, sigma_0, rho_1, beta_1, sigma_1, omega, tyre_param)
+function [Fx, Fy, Mz, SR, SA] = apply_pacejka(Fz, phi, p, s, d, h, l0, l1, rr, xc_1, yc_1, zc_1, rho_0, beta_0, sigma_0, rho_1, beta_1, sigma_1, omega, tyre_param, symmetrize)
+% EDIT:
+% Symmetrize: use for asymm tyres whose lateral force is non null in 0 slip
+% angle.
 
 % Calculating absolute speed of virtual contact point 24/5/2020 - 3
 % phi_fl = 0.1; % TODO: move away.
@@ -35,7 +38,12 @@ Fz_pac = max([(Fz / 1000) 0]);
 if Fz_pac == 0
     Fx = 0; Fy = 0; Mz = 0;
 else
-    [Fx, Fy, Mz] = pacejka96(tyre_param, Fz_pac, 0.0, slip_rate, slip_angle_deg);
+    if symmetrize
+        [Fx, Fy, Mz] = pacejka96(tyre_param, Fz_pac, 0.0, slip_rate, -slip_angle_deg);
+        Fy = -Fy; Mz = -Mz;
+    else
+        [Fx, Fy, Mz] = pacejka96(tyre_param, Fz_pac, 0.0, slip_rate, slip_angle_deg);
+    end
 end
 
 SR = slip_rate;
