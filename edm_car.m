@@ -56,12 +56,12 @@ zpn_rr_0 = 0;
 zpn_rr_1 = 0;
 
 % Steer angle
-% if (t >= 2) && (t <= 4)
-%     phi_fl = -deg2rad(0)*sin(2*pi*(1/2)*(t - 2));
-%     phi_fr = -deg2rad(0)*sin(2*pi*(1/2)*(t - 2));
-%     phi_rl = 0;
-%     phi_rr = 0;
-if 1 %else
+if (t >= 2) && (t <= 4)
+    phi_fl = -deg2rad(20)*sin(2*pi*(1/2)*(t - 2));
+    phi_fr = -deg2rad(20)*sin(2*pi*(1/2)*(t - 2));
+    phi_rl = 0;
+    phi_rr = 0;
+else
     phi_fl = 0;
     phi_fr = 0;
     phi_rl = 0;
@@ -75,9 +75,9 @@ mc = 1500; % kg.
 Ixc = 300; %kg * m
 Iyc = 2000; %kg * m
 Izc = 2000; %kg * m
-xb = -0.3; %m, distance of COG from car-centered RS in car RS.
+xb = 0.3; %m, distance of COG from car-centered RS in car RS.
 yb = 0.0; %m
-zb = 0.2; %m
+zb = 0.4; %m
 
 % Suspension geometry
 p_f = 1.4; %m, distance of front axle from car RS
@@ -417,8 +417,8 @@ Q = Qp + Q_aer_d + Q_aer_l;
 % Q(2:end) = -Q(2:end);
 
 %% Assembling final equation
-% DU = -M1*q_1 + dEcc_dq - dV_dq_T - dD_dq_T + Q;
-DU = dEcc_dq - dV_dq_T - dD_dq_T + Q;
+DU = -M1*q_1 + dEcc_dq - dV_dq_T - dD_dq_T + Q;
+% DU = dEcc_dq - dV_dq_T - dD_dq_T + Q;
 q_2 = M \ DU;
 % 
 % if t > 5

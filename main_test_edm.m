@@ -7,6 +7,7 @@ clc
 Vz = [zeros(14, 1); 0; 0; .3; 0; 0; 0; .5; .5; .5; .5; 0; 0; 0; 0];
 Vz(1) = 20; % 50
 
+steppo = .001;
 
 use_ode45 = false;
 
@@ -14,7 +15,7 @@ if use_ode45
 [t, y] = ode45(@edm_car,[0 5],Vz);
 end
 tic
-[te, ye] = euler_integration(@edm_car, 0, 10, .0005, Vz);
+[te, ye] = euler_integration(@edm_car, 0, 10, steppo, Vz);
 toc
 tic
 pp = [];
@@ -225,7 +226,7 @@ sim_out.Az = sim_out.xv(:, 69);
 sim_out.Speed_ms = (sim_out.xc_1.^2 + sim_out.yc_1.^2 + sim_out.zc_1.^2).^.5;
 sim_out.Speed_kmh = 3.6*sim_out.Speed_ms;
 
-save('WhyGoesHeRight_03_zb02_xbM03_ybP00_symmetrizedPac.mat', 'sim_out');
+save('TryReIntroducingM1_WithM1_02_COGH_04m_step1_1000s.mat', 'sim_out');
 
 
 

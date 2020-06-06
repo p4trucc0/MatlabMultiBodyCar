@@ -20,7 +20,7 @@ Xb0 = v2M([xu_0, yu_0, zu_0])';
 Xb1 = v2M([xu_1, yu_1, zu_1])';
 
 % part NOT accounting for the suspension.
-L_lin_0 = [ones(3) Lc0*Xb0*Ac0; zeros(3) Ac0];
+L_lin_0 = [eye(3) Lc0*Xb0*Ac0; zeros(3) Ac0];
 L_lin_1 = [zeros(3) (Lc1*Xb0*Ac0 + Lc0*Xb1*Ac0 + Lc0*Xb0*Ac1); ...
     zeros(3) Ac1];
 
