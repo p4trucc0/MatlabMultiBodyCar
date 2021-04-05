@@ -80,6 +80,10 @@ p_fl =  p_f; s_fl =  s_f; h_fl = h_f; mr_fl = mr_f; Jr_fl = Jr_f; rr_fl = rr_f;
 p_fr =  p_f; s_fr = -s_f; h_fr = h_f; mr_fr = mr_f; Jr_fr = Jr_f; rr_fr = rr_f;
 p_rl = -p_r; s_rl =  s_r; h_rl = h_r; mr_rl = mr_f; Jr_rl = Jr_r; rr_rl = rr_r;
 p_rr = -p_r; s_rr = -s_r; h_rr = h_r; mr_rr = mr_f; Jr_rr = Jr_r; rr_rr = rr_r;
+Xh_fl = [p_fl; s_fl; h_fl];
+Xh_fr = [p_fr; s_fr; h_fr];
+Xh_rl = [p_rl; s_rl; h_rl];
+Xh_rr = [p_rr; s_rr; h_rr];
 
 % Assigning supension values to each independent suspension.
 ks_fl = ks_f; rs_fl = rs_f; l_fl_ind = l_f_ind; 
@@ -126,6 +130,58 @@ tyre_param_rr = tyre_param;
 [p_a_rl, p_b_rl, p_c_rl, p_d_rl] = get_plane_coeffs(ptv(1, 3), ptv(2, 3), ptv(3, 3));
 [p_a_rr, p_b_rr, p_c_rr, p_d_rr] = get_plane_coeffs(ptv(1, 4), ptv(2, 4), ptv(3, 4));
 Lc0 = generate_rotation_matrix(rho_0, beta_0, sigma_0);
+[B_fl, Bm_fl, dB_fl] = get_B_matrix(Lc0, p_a_fl, p_b_fl, p_c_fl);
+[B_fr, Bm_fr, dB_fr] = get_B_matrix(Lc0, p_a_fr, p_b_fr, p_c_fr);
+[B_rl, Bm_rl, dB_rl] = get_B_matrix(Lc0, p_a_rl, p_b_rl, p_c_rl);
+[B_rr, Bm_rr, dB_rr] = get_B_matrix(Lc0, p_a_rr, p_b_rr, p_c_rr);
+Xc = [xc_0; yc_0; zc_0];
+X_fl = get_X_ij(B_fl, Lc0, Xc, Xh_fl, p_d_fl);
+X_fr = get_X_ij(B_fr, Lc0, Xc, Xh_fr, p_d_fr);
+X_rl = get_X_ij(B_rl, Lc0, Xc, Xh_rl, p_d_rl);
+X_rr = get_X_ij(B_rr, Lc0, Xc, Xh_rr, p_d_rr);
+
+%% 1 Kinetic contribution
+% 1.1 - Vehicle body
+% TODO: Find a better approximation for physical matrix.
+Mc_phys = diag([mc mc mc Ixc Iyc Izc]);
+m_tot = mc + mr_fl + mr_fr + mr_rl + mr_rr + md_f + md_r;
+Mc_phys_approx1 = diag([m_tot m_tot mc Ixc Iyc Izc]);
+L_mc = [eye(3), zeros(3); zeros(3), generate_a(rho_0, beta_0, sigma_0)];
+Mc = L_mc'*Mc_phys*L_mc;
+Mc_approx1 = L_mc'*Mc_phys_approx1*L_mc;
+
+% 1.2 - Generic Tyre
+% Calculate jacobian matrices
+Jac_fl = get_tyre_jacobian(B_fl, Bm_fl, dB_fl, rho_0, beta_0, sigma_0, ...
+    p_a_fl, p_b_fl, p_c_fl, p_d_fl, Lc0, Xh_fl, Xc);
+Jac_fr = get_tyre_jacobian(B_fr, Bm_fr, dB_fr, rho_0, beta_0, sigma_0, ...
+    p_a_fr, p_b_fr, p_c_fr, p_d_fr, Lc0, Xh_fr, Xc);
+Jac_rl = get_tyre_jacobian(B_rl, Bm_rl, dB_rl, rho_0, beta_0, sigma_0, ...
+    p_a_rl, p_b_rl, p_c_rl, p_d_rl, Lc0, Xh_rl, Xc);
+Jac_rr = get_tyre_jacobian(B_rr, Bm_rr, dB_rr, rho_0, beta_0, sigma_0, ...
+    p_a_rr, p_b_rr, p_c_rr, p_d_rr, Lc0, Xh_rr, Xc);
+Mr_fl_phys = mr_fl*eye(3);
+Mr_fr_phys = mr_fr*eye(3);
+Mr_rl_phys = mr_rl*eye(3);
+Mr_rr_phys = mr_rr*eye(3);
+Mr_fl = Jac_fl'*Mr_fl_phys*Jac_fl;
+Mr_fr = Jac_fr'*Mr_fr_phys*Jac_fr;
+Mr_rl = Jac_rl'*Mr_rl_phys*Jac_rl;
+Mr_rr = Jac_rr'*Mr_rr_phys*Jac_rr;
+
+% 1.3 Differentials and transmission parts.
+Jac_f = .5*Jac_fl + .5*Jac_fr;
+Jac_r = .5*Jac_rl + .5*Jac_rr;
+Md_f_phys = md_f*eye(3);
+Md_r_phys = md_r*eye(3);
+Md_f = Jac_f'*Md_f_phys*Jac_f;
+Md_r = Jac_r'*Md_r_phys*Jac_r;
+
+% 1.4 Sum up all components
+M = Mc + Mr_fl + Mr_fr + Mr_rl + Mr_rr + Md_f + Md_r;
+
+
+keyboard
 
 %% SUBFUNCTIONS
     
@@ -140,18 +196,55 @@ Lc0 = generate_rotation_matrix(rho_0, beta_0, sigma_0);
 
     % get B, Bm and dB matrices and scalar. MAKE SURE THIS IS OK
     function [B, Bm, dB] = get_B_matrix(Lc, p_a, p_b, p_c)
-        if 1 % for debug purposes
+        if 0 % for debug purposes
             A = [1, 0, 0, Lc(1, 3);
                 0, 1, 0, Lc(2, 3);
                 0, 0, 1, Lc(3, 3);
                 p_a, p_b, p_c, 0];
         end
-        dB = (a*Lc(1, 3) + b*Lc(2, 3) + c*Lc(3, 3));
-        Bm = [(b*Lc(2, 3) + c*Lc(3, 3)), -b*Lc(1, 3), -c*Lc(1, 3), Lc(1, 3);
-            -a*Lc(2, 3), (a*Lc(1, 3) + c*Lc(3, 3)), -c*Lc(2, 3), Lc(2, 3);
-            -a*Lc(3, 3), -b*Lc(3, 3), (a*Lc(1, 3) + b*Lc(2, 3)), Lc(3, 3);
-            a, b, c, -1];
+        dB = (p_a*Lc(1, 3) + p_b*Lc(2, 3) + p_c*Lc(3, 3));
+        Bm = [(p_b*Lc(2, 3) + p_c*Lc(3, 3)), -p_b*Lc(1, 3), -p_c*Lc(1, 3), Lc(1, 3);
+            -p_a*Lc(2, 3), (p_a*Lc(1, 3) + p_c*Lc(3, 3)), -p_c*Lc(2, 3), Lc(2, 3);
+            -p_a*Lc(3, 3), -p_b*Lc(3, 3), (p_a*Lc(1, 3) + p_b*Lc(2, 3)), Lc(3, 3);
+            p_a, p_b, p_c, -1];
         B = (1/dB)*Bm;
+        % keyboard
+    end
+
+    % der_by: 1: rho, 2: beta, 3: sigma.
+    function B1 = get_B_derivative(Bm, dB, r, b, s, p_a, p_b, p_c, der_by)
+        Lc1 = generate_rotmatrix_drvd(r, b, s, der_by);
+        Lc13_1 = Lc1(1, 3);
+        Lc23_1 = Lc1(2, 3);
+        Lc33_1 = Lc1(3, 3);
+        dB1 = (p_a*Lc1(1, 3) + p_b*Lc1(2, 3) + p_c*Lc1(3, 3));
+        Bm1 = [(p_b*Lc1(2, 3) + p_c*Lc1(3, 3)), -p_b*Lc1(1, 3), -p_c*Lc1(1, 3), Lc1(1, 3);
+            -p_a*Lc1(2, 3), (p_a*Lc1(1, 3) + p_c*Lc1(3, 3)), -p_c*Lc1(2, 3), Lc1(2, 3);
+            -p_a*Lc1(3, 3), -p_b*Lc1(3, 3), (p_a*Lc1(1, 3) + p_b*Lc1(2, 3)), Lc1(3, 3);
+            0, 0, 0, 0];
+        B1 = (dB*Bm1 - dB1*Bm)./(dB^2);
+    end
+
+    function J_ij = get_tyre_jacobian(B, Bm, dB, r, b, s, p_a, p_b, p_c, p_d, Lc, Xh_ij, Xc)
+        v4 = [(Lc*Xh_ij + Xc); p_d];
+        dXr_ij_dxc = B(1:3, :)*[1 0 0 0]';
+        dXr_ij_dyc = B(1:3, :)*[0 1 0 0]';
+        dXr_ij_dzc = B(1:3, :)*[0 0 1 0]';
+        dB_ij_drho = get_B_derivative(Bm, dB, r, b, s, p_a, p_b, p_c, 1);
+        dv4_drho = [generate_rotmatrix_drvd(r, b, s, 1)*Xh_ij; 0];
+        dXr_ij_drho = dB_ij_drho(1:3, :)*v4 + B(1:3, :)*dv4_drho;
+        dB_ij_dbeta = get_B_derivative(Bm, dB, r, b, s, p_a, p_b, p_c, 2);
+        dv4_dbeta = [generate_rotmatrix_drvd(r, b, s, 2)*Xh_ij; 0];
+        dXr_ij_dbeta = dB_ij_dbeta(1:3, :)*v4 + B(1:3, :)*dv4_dbeta;
+        dB_ij_dsigma = get_B_derivative(Bm, dB, r, b, s, p_a, p_b, p_c, 3);
+        dv4_dsigma = [generate_rotmatrix_drvd(r, b, s, 3)*Xh_ij; 0];
+        dXr_ij_dsigma = dB_ij_dsigma(1:3, :)*v4 + B(1:3, :)*dv4_dsigma;
+        J_ij = [dXr_ij_dxc, dXr_ij_dyc, dXr_ij_dzc, dXr_ij_drho, ...
+            dXr_ij_dbeta, dXr_ij_dsigma];
+    end
+
+    function X_ij = get_X_ij(B_ij, Lc, Xc, Xh_ij, p_d_ij)
+        X_ij = B_ij*([Lc*Xh_ij + Xc; p_d_ij]);
     end
 
 
