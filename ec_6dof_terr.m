@@ -10,6 +10,7 @@ function [qd, par_out] = ec_6dof_terr(q, ptv)
 % ptv: previous tyre (contact points) positions.
 % 4 rows by 4 columns. Rows: x, y, z, l; columns: FL, FR, RL, RR
 
+g = 9.806;
 
 par_out = struct();
 
@@ -75,6 +76,12 @@ Jr_r = .08; % radial inertia of rear wheel
 rr_f = 0.3; % rolling radius
 rr_r = 0.3;
 
+% Steering control parameter. This should be parametrized as well.
+delta_fl = 0.0;
+delta_fr = 0.0;
+delta_rl = 0.0;
+delta_rr = 0.0;
+
 % Transform all geometric values for car positions
 p_fl =  p_f; s_fl =  s_f; h_fl = h_f; mr_fl = mr_f; Jr_fl = Jr_f; rr_fl = rr_f;
 p_fr =  p_f; s_fr = -s_f; h_fr = h_f; mr_fr = mr_f; Jr_fr = Jr_f; rr_fr = rr_f;
@@ -135,10 +142,10 @@ Lc0 = generate_rotation_matrix(rho_0, beta_0, sigma_0);
 [B_rl, Bm_rl, dB_rl] = get_B_matrix(Lc0, p_a_rl, p_b_rl, p_c_rl);
 [B_rr, Bm_rr, dB_rr] = get_B_matrix(Lc0, p_a_rr, p_b_rr, p_c_rr);
 Xc = [xc_0; yc_0; zc_0];
-X_fl = get_X_ij(B_fl, Lc0, Xc, Xh_fl, p_d_fl);
-X_fr = get_X_ij(B_fr, Lc0, Xc, Xh_fr, p_d_fr);
-X_rl = get_X_ij(B_rl, Lc0, Xc, Xh_rl, p_d_rl);
-X_rr = get_X_ij(B_rr, Lc0, Xc, Xh_rr, p_d_rr);
+X_fl_0 = get_X_ij(B_fl, Lc0, Xc, Xh_fl, p_d_fl);
+X_fr_0 = get_X_ij(B_fr, Lc0, Xc, Xh_fr, p_d_fr);
+X_rl_0 = get_X_ij(B_rl, Lc0, Xc, Xh_rl, p_d_rl);
+X_rr_0 = get_X_ij(B_rr, Lc0, Xc, Xh_rr, p_d_rr);
 
 %% 1 Kinetic contribution
 % 1.1 - Vehicle body
@@ -164,14 +171,14 @@ Mr_fl_phys = mr_fl*eye(3);
 Mr_fr_phys = mr_fr*eye(3);
 Mr_rl_phys = mr_rl*eye(3);
 Mr_rr_phys = mr_rr*eye(3);
-Mr_fl = Jac_fl'*Mr_fl_phys*Jac_fl;
-Mr_fr = Jac_fr'*Mr_fr_phys*Jac_fr;
-Mr_rl = Jac_rl'*Mr_rl_phys*Jac_rl;
-Mr_rr = Jac_rr'*Mr_rr_phys*Jac_rr;
+Mr_fl = Jac_fl(1:3,:)'*Mr_fl_phys*Jac_fl(1:3,:);
+Mr_fr = Jac_fr(1:3,:)'*Mr_fr_phys*Jac_fr(1:3,:);
+Mr_rl = Jac_rl(1:3,:)'*Mr_rl_phys*Jac_rl(1:3,:);
+Mr_rr = Jac_rr(1:3,:)'*Mr_rr_phys*Jac_rr(1:3,:);
 
 % 1.3 Differentials and transmission parts.
-Jac_f = .5*Jac_fl + .5*Jac_fr;
-Jac_r = .5*Jac_rl + .5*Jac_rr;
+Jac_f = .5*Jac_fl(1:3,:) + .5*Jac_fr(1:3,:);
+Jac_r = .5*Jac_rl(1:3,:) + .5*Jac_rr(1:3,:);
 Md_f_phys = md_f*eye(3);
 Md_r_phys = md_r*eye(3);
 Md_f = Jac_f'*Md_f_phys*Jac_f;
@@ -180,6 +187,68 @@ Md_r = Jac_r'*Md_r_phys*Jac_r;
 % 1.4 Sum up all components
 M = Mc + Mr_fl + Mr_fr + Mr_rl + Mr_rr + Md_f + Md_r;
 
+%% 2 External forces
+% 2.1 Tyre forces
+% Note that they are applied according to the body's reference system, i.e.
+% they're NOT projected along the plane the wheel is found upon. Which
+% would probably be more correct.
+L_rc_fl = generate_rotation_matrix(0, 0, delta_fl);
+L_rc_fr = generate_rotation_matrix(0, 0, delta_fr);
+L_rc_rl = generate_rotation_matrix(0, 0, delta_rl);
+L_rc_rr = generate_rotation_matrix(0, 0, delta_rr);
+
+L_0r_fl = L_rc_fl'*Lc0';
+L_0r_fr = L_rc_fr'*Lc0';
+L_0r_rl = L_rc_rl'*Lc0';
+L_0r_rr = L_rc_rr'*Lc0';
+
+% Weight, due to wheel and differential, in the absolute space frame
+Fz_rd_fl_0 = [0; 0; g*(mr_fl + md_f/2)];
+Fz_rd_fr_0 = [0; 0; g*(mr_fr + md_f/2)];
+Fz_rd_rl_0 = [0; 0; g*(mr_rl + md_r/2)];
+Fz_rd_rr_0 = [0; 0; g*(mr_rr + md_r/2)];
+% Same, but in the wheel space frame
+Fz_rd_fl_r = L_0r_fl*Fz_rd_fl_0;
+Fz_rd_fr_r = L_0r_fr*Fz_rd_fr_0;
+Fz_rd_rl_r = L_0r_rl*Fz_rd_rl_0;
+Fz_rd_rr_r = L_0r_rr*Fz_rd_rr_0;
+% Force due to suspension compression
+X_fl_1 = Jac_fl*q_1(1:6, 1); l_fl_0 = X_fl_0(4, 1); l_fl_1 = X_fl_1(4, 1);
+X_fr_1 = Jac_fr*q_1(1:6, 1); l_fr_0 = X_fr_0(4, 1); l_fr_1 = X_fr_1(4, 1);
+X_rl_1 = Jac_rl*q_1(1:6, 1); l_rl_0 = X_rl_0(4, 1); l_rl_1 = X_rl_1(4, 1);
+X_rr_1 = Jac_rr*q_1(1:6, 1); l_rr_0 = X_rr_0(4, 1); l_rr_1 = X_rr_1(4, 1);
+Fz_s_fl_r = [0; 0; -ks_fl*(l_fl_0 - l_fl_ind) - rs_fl*l_fl_1];
+Fz_s_fr_r = [0; 0; -ks_fr*(l_fr_0 - l_fr_ind) - rs_fr*l_fr_1];
+Fz_s_rl_r = [0; 0; -ks_rl*(l_rl_0 - l_rl_ind) - rs_rl*l_rl_1];
+Fz_s_rr_r = [0; 0; -ks_rr*(l_rr_0 - l_rr_ind) - rs_rr*l_rr_1];
+Fz_ar_fl_r = [0; 0; karb_f*(l_fr_0 - l_fl_0)];
+Fz_ar_fr_r = [0; 0; karb_f*(l_fl_0 - l_fr_0)];
+Fz_ar_rl_r = [0; 0; karb_r*(l_rr_0 - l_rl_0)];
+Fz_ar_rr_r = [0; 0; karb_r*(l_rl_0 - l_rr_0)];
+Fz_3_fl_r = [0; 0; k3_f*(l3_f_ind - ((l_fl_0 + l_fr_0)/2))];
+Fz_3_fr_r = [0; 0; k3_f*(l3_f_ind - ((l_fl_0 + l_fr_0)/2))];
+Fz_3_rl_r = [0; 0; k3_r*(l3_r_ind - ((l_rr_0 + l_rl_0)/2))];
+Fz_3_rr_r = [0; 0; k3_r*(l3_r_ind - ((l_rr_0 + l_rl_0)/2))];
+F_susp_fl_r = Fz_s_fl_r + Fz_ar_fl_r + Fz_3_fl_r;
+F_susp_fr_r = Fz_s_fr_r + Fz_ar_fr_r + Fz_3_fr_r;
+F_susp_rl_r = Fz_s_rl_r + Fz_ar_rl_r + Fz_3_rl_r;
+F_susp_rr_r = Fz_s_rr_r + Fz_ar_rr_r + Fz_3_rr_r;
+
+Fz_temp_fl_r = Fz_rd_fl_r + F_susp_fl_r;
+Fz_temp_fr_r = Fz_rd_fr_r + F_susp_fr_r;
+Fz_temp_rl_r = Fz_rd_rl_r + F_susp_rl_r;
+Fz_temp_rr_r = Fz_rd_rr_r + F_susp_rr_r;
+
+% Speed of the contact point in the wheel reference frame
+Lc_1 = generate_rotmatrix_dtime(rho_0, beta_0, sigma_0, rho_1, beta_1, sigma_1);
+L_0r_fl_1 = L_rc_fl'*Lc_1;
+L_0r_fr_1 = L_rc_fr'*Lc_1;
+L_0r_rl_1 = L_rc_rl'*Lc_1;
+L_0r_rr_1 = L_rc_rr'*Lc_1;
+X_fl_1_r = L_0r_fl_1*X_fl_0(1:3, :) + L_0r_fl*X_fl_1(1:3, :);
+X_fr_1_r = L_0r_fr_1*X_fr_0(1:3, :) + L_0r_fr*X_fr_1(1:3, :);
+X_rl_1_r = L_0r_rl_1*X_rl_0(1:3, :) + L_0r_rl*X_rl_1(1:3, :);
+X_rr_1_r = L_0r_rr_1*X_rr_0(1:3, :) + L_0r_rr*X_rr_1(1:3, :);
 
 keyboard
 
@@ -227,21 +296,37 @@ keyboard
 
     function J_ij = get_tyre_jacobian(B, Bm, dB, r, b, s, p_a, p_b, p_c, p_d, Lc, Xh_ij, Xc)
         v4 = [(Lc*Xh_ij + Xc); p_d];
-        dXr_ij_dxc = B(1:3, :)*[1 0 0 0]';
-        dXr_ij_dyc = B(1:3, :)*[0 1 0 0]';
-        dXr_ij_dzc = B(1:3, :)*[0 0 1 0]';
+%         dXr_ij_dxc = B(1:3, :)*[1 0 0 0]';
+%         dXr_ij_dyc = B(1:3, :)*[0 1 0 0]';
+%         dXr_ij_dzc = B(1:3, :)*[0 0 1 0]';
+        dXr_ij_dxc = B(:, :)*[1 0 0 0]';
+        dXr_ij_dyc = B(:, :)*[0 1 0 0]';
+        dXr_ij_dzc = B(:, :)*[0 0 1 0]';
         dB_ij_drho = get_B_derivative(Bm, dB, r, b, s, p_a, p_b, p_c, 1);
         dv4_drho = [generate_rotmatrix_drvd(r, b, s, 1)*Xh_ij; 0];
-        dXr_ij_drho = dB_ij_drho(1:3, :)*v4 + B(1:3, :)*dv4_drho;
+%         dXr_ij_drho = dB_ij_drho(1:3, :)*v4 + B(1:3, :)*dv4_drho;
+        dXr_ij_drho = dB_ij_drho(:, :)*v4 + B(:, :)*dv4_drho;
         dB_ij_dbeta = get_B_derivative(Bm, dB, r, b, s, p_a, p_b, p_c, 2);
         dv4_dbeta = [generate_rotmatrix_drvd(r, b, s, 2)*Xh_ij; 0];
-        dXr_ij_dbeta = dB_ij_dbeta(1:3, :)*v4 + B(1:3, :)*dv4_dbeta;
+%         dXr_ij_dbeta = dB_ij_dbeta(1:3, :)*v4 + B(1:3, :)*dv4_dbeta;
+        dXr_ij_dbeta = dB_ij_dbeta(:, :)*v4 + B(:, :)*dv4_dbeta;
         dB_ij_dsigma = get_B_derivative(Bm, dB, r, b, s, p_a, p_b, p_c, 3);
         dv4_dsigma = [generate_rotmatrix_drvd(r, b, s, 3)*Xh_ij; 0];
-        dXr_ij_dsigma = dB_ij_dsigma(1:3, :)*v4 + B(1:3, :)*dv4_dsigma;
+%         dXr_ij_dsigma = dB_ij_dsigma(1:3, :)*v4 + B(1:3, :)*dv4_dsigma;
+        dXr_ij_dsigma = dB_ij_dsigma(:, :)*v4 + B(:, :)*dv4_dsigma;
         J_ij = [dXr_ij_dxc, dXr_ij_dyc, dXr_ij_dzc, dXr_ij_drho, ...
             dXr_ij_dbeta, dXr_ij_dsigma];
     end
+
+    % TODO: This is inefficient. Apply omega rules instead.
+%     function X_ij_1 = get_X_ij_1(B, Bm, dB, r, b, s, r1, b1, s1, p_a, p_b, p_c, p_d, Lc, Xh_ij, Xc)
+%         v4_0 = [(Lc*Xh_ij + Xc); p_d];
+%         dv4_drho = [generate_rotmatrix_drvd(r, b, s, 1)*Xh_ij; 0];
+%         dv4_dbeta = [generate_rotmatrix_drvd(r, b, s, 2)*Xh_ij; 0];
+%         dv4_dsigma = [generate_rotmatrix_drvd(r, b, s, 3)*Xh_ij; 0];
+%         v4_1 = r1*dv4_drho + b1*dv4_dbeta + s1*dv4_dsigma;
+%         X_ij_1 = B*v4_1 + get_B_derivative
+%     end
 
     function X_ij = get_X_ij(B_ij, Lc, Xc, Xh_ij, p_d_ij)
         X_ij = B_ij*([Lc*Xh_ij + Xc; p_d_ij]);
