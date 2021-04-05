@@ -1,4 +1,4 @@
-function [qd, par_out] = ec_6dof_terr(q)
+function [qd, par_out] = ec_6dof_terr(q, ptv)
 % Patrucco, 2021
 % 6-DOF model of a vehicle (plus 4 for wheel speeds and pos)
 % includes variable height terrain
@@ -7,6 +7,8 @@ function [qd, par_out] = ec_6dof_terr(q)
 
 % q: 12 x 1 (6 free coordinates: first speeds, then positions): xc, yc, zc, rho_c, beta_c, sigma_c
 % qd: derivation of q: 6 accelerations and 6 speeds.
+% ptv: previous tyre (contact points) positions.
+% 4 rows by 4 columns. Rows: x, y, z, l; columns: FL, FR, RL, RR
 
 
 par_out = struct();
@@ -116,10 +118,42 @@ tyre_param_fr = tyre_param;
 tyre_param_rl = tyre_param;
 tyre_param_rr = tyre_param;
 
+%% Get tyres positions
+% This requires previous tyres positions. I should feed them somewhere in
+% the code.
+[p_a_fl, p_b_fl, p_c_fl, p_d_fl] = get_plane_coeffs(ptv(1, 1), ptv(2, 1), ptv(3, 1));
+[p_a_fr, p_b_fr, p_c_fr, p_d_fr] = get_plane_coeffs(ptv(1, 2), ptv(2, 2), ptv(3, 2));
+[p_a_rl, p_b_rl, p_c_rl, p_d_rl] = get_plane_coeffs(ptv(1, 3), ptv(2, 3), ptv(3, 3));
+[p_a_rr, p_b_rr, p_c_rr, p_d_rr] = get_plane_coeffs(ptv(1, 4), ptv(2, 4), ptv(3, 4));
+Lc0 = generate_rotation_matrix(rho_0, beta_0, sigma_0);
+
+%% SUBFUNCTIONS
+    
+    % get plane coefficients
+    function [p_a, p_b, p_c, p_d] = get_plane_coeffs(x, y, z)
+        % W.I.P. (It will depend on terrain and position)
+        p_a = 0;
+        p_b = 0;
+        p_c = 1.0;
+        p_d = 0.0;
+    end
+
+    % get B, Bm and dB matrices and scalar. MAKE SURE THIS IS OK
+    function [B, Bm, dB] = get_B_matrix(Lc, p_a, p_b, p_c)
+        if 1 % for debug purposes
+            A = [1, 0, 0, Lc(1, 3);
+                0, 1, 0, Lc(2, 3);
+                0, 0, 1, Lc(3, 3);
+                p_a, p_b, p_c, 0];
+        end
+        dB = (a*Lc(1, 3) + b*Lc(2, 3) + c*Lc(3, 3));
+        Bm = [(b*Lc(2, 3) + c*Lc(3, 3)), -b*Lc(1, 3), -c*Lc(1, 3), Lc(1, 3);
+            -a*Lc(2, 3), (a*Lc(1, 3) + c*Lc(3, 3)), -c*Lc(2, 3), Lc(2, 3);
+            -a*Lc(3, 3), -b*Lc(3, 3), (a*Lc(1, 3) + b*Lc(2, 3)), Lc(3, 3);
+            a, b, c, -1];
+        B = (1/dB)*Bm;
+    end
 
 
 
-
-
-
-
+end
