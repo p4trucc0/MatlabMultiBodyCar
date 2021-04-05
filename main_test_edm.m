@@ -9,7 +9,7 @@ Vz(1) = 20; % 50
 
 xd_max = 100*ones(14, 1);
 
-steppo = .0025;
+steppo = .001;
 
 use_ode45 = false;
 
@@ -228,7 +228,7 @@ sim_out.Az = sim_out.xv(:, 69);
 sim_out.Speed_ms = (sim_out.xc_1.^2 + sim_out.yc_1.^2 + sim_out.zc_1.^2).^.5;
 sim_out.Speed_kmh = 3.6*sim_out.Speed_ms;
 
-save('DeStiffing_Step_0025_DES000.mat', 'sim_out');
+save('Classic_SweepSteer_step_1ms_2.mat', 'sim_out');
 
 
 
