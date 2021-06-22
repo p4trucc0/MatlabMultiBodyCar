@@ -213,6 +213,8 @@ Fz_rd_fr_r = L_0r_fr*Fz_rd_fr_0;
 Fz_rd_rl_r = L_0r_rl*Fz_rd_rl_0;
 Fz_rd_rr_r = L_0r_rr*Fz_rd_rr_0;
 % Force due to suspension compression
+% TODO: Check if k_ij_0 is more than the maximum value (in that case, force
+% force it to the maximum amount and flag the wheel as detached from gnd)
 X_fl_1 = Jac_fl*q_1(1:6, 1); l_fl_0 = X_fl_0(4, 1); l_fl_1 = X_fl_1(4, 1);
 X_fr_1 = Jac_fr*q_1(1:6, 1); l_fr_0 = X_fr_0(4, 1); l_fr_1 = X_fr_1(4, 1);
 X_rl_1 = Jac_rl*q_1(1:6, 1); l_rl_0 = X_rl_0(4, 1); l_rl_1 = X_rl_1(4, 1);
@@ -249,6 +251,30 @@ X_fl_1_r = L_0r_fl_1*X_fl_0(1:3, :) + L_0r_fl*X_fl_1(1:3, :);
 X_fr_1_r = L_0r_fr_1*X_fr_0(1:3, :) + L_0r_fr*X_fr_1(1:3, :);
 X_rl_1_r = L_0r_rl_1*X_rl_0(1:3, :) + L_0r_rl*X_rl_1(1:3, :);
 X_rr_1_r = L_0r_rr_1*X_rr_0(1:3, :) + L_0r_rr*X_rr_1(1:3, :);
+
+% Calculate Pacejka forces.
+% TODO.
+Fx_fl = 0; Fy_fl = 0;
+Fx_fr = 0; Fy_fr = 0;
+Fx_rl = 0; Fy_rl = 0;
+Fx_rr = 0; Fy_rr = 0;
+
+% Depending on if the tyre is up, weight must or must not be applied. For
+% now, assuming it shouldn't be applied.
+F_fl_r = F_susp_fl_r + [Fx_fl; Fy_fl; 0];
+F_fr_r = F_susp_fr_r + [Fx_fr; Fy_fr; 0];
+F_rl_r = F_susp_rl_r + [Fx_rl; Fy_rl; 0];
+F_rr_r = F_susp_rr_r + [Fx_rr; Fy_rr; 0];
+
+F_fl_0 = L_0r_fl'*F_fl_r;
+F_fr_0 = L_0r_fr'*F_fr_r;
+F_rl_0 = L_0r_rl'*F_rl_r;
+F_rr_0 = L_0r_rr'*F_rr_r;
+
+Qf_fl = F_fl_0'*Jac_fl(1:3, :);
+Qf_fr = F_fr_0'*Jac_fr(1:3, :);
+Qf_rl = F_rl_0'*Jac_rl(1:3, :);
+Qf_rr = F_rr_0'*Jac_rr(1:3, :);
 
 keyboard
 
